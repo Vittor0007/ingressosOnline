@@ -1,30 +1,21 @@
 <?php
 
-require_once __DIR__ . '/../src/responder.php';
+header('Content-Type: application/json; charset=utf-8');
 
 try {
-    $caminho = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    $versao = getenv('APP_VERSAO');
+    require_once __DIR__ . '/../src/Response.php';
 
-    if (!is_string($caminho) || $versao === false) {
-        throw new RuntimeException('Não achei o caminho correto');
-    }
+    $resposta = new Response();
+    $resultado = $resposta->init($_SERVER['REQUEST_URI'], getenv('APP_VERSAO'));
 
-    $resposta = responder($caminho, $versao);
-
-    http_response_code($resposta['status']);
-
-    if ($caminho === '/saude') {
-        header('Content-Type: application/json; charset=utf-8');
-    } else {
-        header('Content-Type: text/html; charset=utf-8');
-    }
-
-    echo $resposta['corpo'];
-} catch (Throwable $erro) {
+    http_response_code($resultado['status']);
+    echo json_encode($resultado['body'], JSON_PRETTY_PRINT);
+} catch (\Throwable $erro) {
     error_log((string) $erro);
-
     http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Erro interno do servidor.';
+
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Erro interno do servidor.',
+    ], JSON_PRETTY_PRINT);
 }
